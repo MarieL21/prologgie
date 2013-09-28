@@ -4,7 +4,7 @@
 using namespace User;
 
 int 
-test_main(int argc, char *argv[])
+main(int argc, char *argv[])
 {
     ANTLR_UINT8*	    fName;
 
@@ -28,9 +28,3 @@ test_main(int argc, char *argv[])
     return 0;
 }
 
-
-int main()
-{
-	test_main(1, NULL);
-	return 0;
-}

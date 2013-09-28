@@ -3,6 +3,7 @@ grammar Prolog;
 options 
 {
     language = Cpp;
+    backtrack = true;
 }
 
 @parser::includes
@@ -27,13 +28,10 @@ options
   typedef PrologLexerTraits PrologParserTraits;	
 }
 
-program : ATOM
-        | VARIABLE
-        | NUMBER
-        | comp_term
+program : (fact | rule | query)+
         ;
 
-comp_term   : functor '(' term (',' term)* ')' {std::cout << "matched comp_term!" << std::endl;};
+comp_term   : functor '(' term (',' term)* ')';
 
 term    : NUMBER
         | VARIABLE
@@ -41,17 +39,27 @@ term    : NUMBER
         | comp_term
         ;
 
-functor : ATOM {std::cout << "matched functor!" << std::endl;};
+functor : ATOM;
 
-ATOM    : (LOWERCASE)(LOWERCASE | UPPERCASE | DIGIT | UNDERSCORE)* {std::cout << "matched atom!" << std::endl;}
-        | PRIME (.)* PRIME
-        | (SPECIAL)+ {std::cout << "matched atom!" << std::endl;}
+
+fact    : (ATOM | comp_term)'.' {std::cout << "matched a fact!" << std::endl;}
         ;
 
-VARIABLE    : (UPPERCASE | UNDERSCORE)(LOWERCASE | UPPERCASE | DIGIT | UNDERSCORE)* {std::cout << "matched var!" << std::endl;};
+rule    : (ATOM | comp_term) ':-' (ATOM | comp_term) (',' (ATOM | comp_term))* '.' {std::cout << "matched a rule!" << std::endl;}
+        ;
+
+query   :   (ATOM | comp_term) (',' (ATOM | comp_term))* '.' {std::cout << "matched a query!" << std::endl;}
+        ;
+
+ATOM    : (LOWERCASE)(LOWERCASE | UPPERCASE | DIGIT | UNDERSCORE)* 
+        | PRIME (.)* PRIME
+        | (SPECIAL)+ 
+        ;
+
+VARIABLE    : (UPPERCASE | UNDERSCORE)(LOWERCASE | UPPERCASE | DIGIT | UNDERSCORE)*;
 
 
-NUMBER  : ('-')? (DIGIT)+ {std::cout << "matched NUMBER!" << std::endl;};
+NUMBER  : ('-')? (DIGIT)+ ;
 
 fragment
 LOWERCASE   : 'a'..'z';
