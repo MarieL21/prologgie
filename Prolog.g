@@ -35,25 +35,36 @@ comp_term   : functor '(' term (',' term)* ')';
 
 term    : NUMBER
         | VARIABLE
-        | ATOM
+        | ATOM {$rule::NumAtoms += 1;}
         | comp_term
         ;
 
-functor : ATOM;
+functor : ATOM {$rule::NumAtoms += 1;} ;
 
 
 fact    : (ATOM | comp_term)'.' {std::cout << "matched a fact!" << std::endl;}
         ;
 
-rule    : (ATOM | comp_term) ':-' (ATOM | comp_term) (',' (ATOM | comp_term))* '.' {std::cout << "matched a rule!" << std::endl;}
+rule   
+scope 
+{
+    int NumAtoms;
+}
+@init
+{
+    $rule::NumAtoms = 0;
+}
+        : (ATOM | comp_term) ':-' (ATOM | comp_term) (',' (ATOM | comp_term))* '.' 
+{std::cout << "matched a rule!" << $rule::NumAtoms <<  std::endl;}
         ;
 
-query   :   (ATOM | comp_term) (',' (ATOM | comp_term))* '.' {std::cout << "matched a query!" << std::endl;}
+query   : (ATOM | comp_term) (',' (ATOM | comp_term))* '.' 
+{std::cout << "matched a query! " << std::endl;}
         ;
 
 ATOM    : (LOWERCASE)(LOWERCASE | UPPERCASE | DIGIT | UNDERSCORE)* 
         | PRIME (.)* PRIME
-        | (SPECIAL)+ 
+        | (SPECIAL)+      
         ;
 
 VARIABLE    : (UPPERCASE | UNDERSCORE)(LOWERCASE | UPPERCASE | DIGIT | UNDERSCORE)*;
