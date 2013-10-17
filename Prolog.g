@@ -6,6 +6,11 @@ options
     backtrack = true;
 }
 
+scope ArgsScope
+{
+    std::vector<std::string> args;
+}
+
 @parser::includes
 {
    #include "PrologLexer.hpp"
@@ -14,6 +19,8 @@ options
 @lexer::includes
 {
    #include <iostream>
+   #include <vector>         
+   #include <string>         
 }
     
 @lexer::namespace {	User }
@@ -33,29 +40,30 @@ program : (fact | rule | query)+
 
 comp_term   : functor '(' term (',' term)* ')';
 
-term    : NUMBER
-        | VARIABLE
-        | ATOM {$rule::NumAtoms += 1;}
-        | comp_term
+term    : n=NUMBER      {$ArgsScope::args.push_back($n.text);}
+        | v=VARIABLE    {$ArgsScope::args.push_back($v.text);}
+        | a=ATOM        {$ArgsScope::args.push_back($a.text);}
+        | comp_term        
         ;
 
-functor : ATOM {$rule::NumAtoms += 1;} ;
+functor : ATOM;
 
 
-fact    : (ATOM | comp_term)'.' {std::cout << "matched a fact!" << std::endl;}
-        ;
-
-rule   
-scope 
-{
-    int NumAtoms;
-}
+fact
+scope ArgsScope;
 @init
 {
-    $rule::NumAtoms = 0;
+    $ArgsScope::args.clear();
 }
-        : (ATOM | comp_term) ':-' (ATOM | comp_term) (',' (ATOM | comp_term))* '.' 
-{std::cout << "matched a rule!" << $rule::NumAtoms <<  std::endl;}
+        : (a=ATOM {$ArgsScope::args.push_back($a.text);}
+             | comp_term) '.' 
+
+{std::cout << "matched a fact!" << std::endl;}
+        ;
+
+rule    
+: (ATOM | comp_term) ':-' (ATOM | comp_term) (',' (ATOM | comp_term))* '.' 
+{std::cout << "matched a rule!" << std::endl;}
         ;
 
 query   : (ATOM | comp_term) (',' (ATOM | comp_term))* '.' 
