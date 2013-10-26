@@ -6,21 +6,26 @@ options
     backtrack = true;
 }
 
-scope ArgsScope
+scope TmpScope
 {
-    std::vector<std::string> args;
+    // Temporarily maps atoms and vars
+    // against register numbers
+    std::map<std::string, int> temp_map;
+    int cnt;
 }
 
 @parser::includes
 {
-   #include "PrologLexer.hpp"
+   #include "PrologLexer.hpp"           
 }
 
 @lexer::includes
 {
    #include <iostream>
-   #include <vector>         
-   #include <string>         
+   #include <vector>
+   #include <map>         
+   #include <string>
+   #include <utility>         
 }
     
 @lexer::namespace {	User }
@@ -35,38 +40,57 @@ scope ArgsScope
   typedef PrologLexerTraits PrologParserTraits;	
 }
 
-program : (fact | rule | query)+
+@parser::traits
+{
+  //Moved to parser::traits
+  using std::string;
+  using std::map;
+  using std::pair;
+
+  typedef  map<string, int> AtomRegisterMap;
+  typedef pair<string, int> AtomRegisterPair;
+
+  struct InstructionTuple
+  {
+      int    opcode;
+      string functor;
+      int    arity;
+      int    _register;
+  };
+}        
+
+program           
+        : (fact | rule | query)+
         ;
 
 comp_term   : functor '(' term (',' term)* ')';
 
-term    : n=NUMBER      {$ArgsScope::args.push_back($n.text);}
-        | v=VARIABLE    {$ArgsScope::args.push_back($v.text);}
-        | a=ATOM        {$ArgsScope::args.push_back($a.text);}
+term    : n=NUMBER      //{$ArgsScope::args.push_back($n.text);}
+        | v=VARIABLE    //{$ArgsScope::args.push_back($v.text);}
+        | a=ATOM        //{$ArgsScope::args.push_back($a.text);}
         | comp_term        
         ;
 
-functor : ATOM;
+functor : a=ATOM        //{$ArgsScope::args.push_back($a.text);}
+        ;
 
 
-fact
-scope ArgsScope;
-@init
-{
-    $ArgsScope::args.clear();
-}
-        : (a=ATOM {$ArgsScope::args.push_back($a.text);}
-             | comp_term) '.' 
+fact    : (a=ATOM      // {$ArgsScope::args.push_back($a.text);}
+        | comp_term) '.' 
 
 {std::cout << "matched a fact!" << std::endl;}
         ;
 
-rule    
-: (ATOM | comp_term) ':-' (ATOM | comp_term) (',' (ATOM | comp_term))* '.' 
+rule    : (ATOM | comp_term) ':-' (ATOM | comp_term) (',' (ATOM | comp_term))* '.' 
+
 {std::cout << "matched a rule!" << std::endl;}
         ;
 
-query   : (ATOM | comp_term) (',' (ATOM | comp_term))* '.' 
+query
+scope TmpScope;   
+        : '?-' (a=ATOM  {$TmpScope::temp_map[$a.text];} 
+        | comp_term)'.' 
+
 {std::cout << "matched a query! " << std::endl;}
         ;
 
